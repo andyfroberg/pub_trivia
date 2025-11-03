@@ -28,4 +28,5 @@ class Question(BaseModel):
     question_text: str
 
 class QuestionResponseFormData(BaseModel):
-    answer: str
+    question_id: int
+    question_response: str
