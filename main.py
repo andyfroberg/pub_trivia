@@ -1,15 +1,17 @@
 from fastapi import FastAPI, Request, Query, HTTPException, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Annotated
 from conf import Config
 from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
 import sqlite3
 from random import randint
+from db import TriviaDatabase
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory='templates')
 
+db = TriviaDatabase()
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -20,25 +22,22 @@ async def read_root(request: Request):
 
 
 @app.get("/random", response_class=HTMLResponse)
-async def read_root(request: Request):
-    conn = sqlite3.connect('test.db')
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    random_question_id = randint(1,100)
-    cursor.execute(
-        """
-        SELECT question_id, difficulty, category, question_text 
-        FROM Questions 
-        WHERE question_id = ?
-        """, 
-        (random_question_id,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    question = [Question(**row) for row in rows]
-    data = {"title": "Random Question", "message": "", "question": question}
+async def read_root(
+    request: Request,
+):
+    
+    print(type(request))
+    print(request)
+    if request:
+        message = request
+    else:
+        message = ""
+    data = {"title": "Random Question", "message": message, "question": get_random_question()}
     context = {"request": request, "data": data}
+    print(type(data))
+    print(data)
     return templates.TemplateResponse("random.html", context)
+
 
 @app.get("/questions/category")
 async def questions_by_category_query(category: CategoryChoices | None = None):
@@ -204,6 +203,8 @@ async def question_response(
 
     context = {"request": request, "data": message}
     return templates.TemplateResponse("result.html", context)
+    # return RedirectResponse(url="/random", status_code=200)
+
   
 
 @app.get("/questions/{question_id}")
@@ -269,6 +270,26 @@ async def questions_by_query(
     rows = cursor.fetchall()
     conn.close()
     return [Question(**row) for row in rows]
+
+
+def get_random_question() -> Question:
+    conn = sqlite3.connect('test.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT question_id, difficulty, category, question_text 
+        FROM Questions 
+        WHERE question_id = ?
+        """, 
+        (randint(1,100),)
+    )
+    rows = cursor.fetchall()
+    print(type(rows))
+    print(rows)
+    conn.close()
+    return [Question(**row) for row in rows]
+
 
 
 # @app.get("/round", response_class=HTMLResponse)
