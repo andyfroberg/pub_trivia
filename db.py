@@ -1,80 +1,59 @@
 import sqlite3
-import csv
 from dataclasses import dataclass
 import pandas as pd
-
-conn = sqlite3.connect('test.db')
-cursor = conn.cursor()
-
-with open('create_tables.sql', 'r') as f:
-    statements = f.read()
-    for statement in statements.split(";"):
-        cursor.execute(statement)
-
-# with open('../data/questions_v3.csv', 'r') as f:
-#     csv_reader = csv.reader(f)
-#     next(csv_reader)
-
-#     for row in csv_reader:
-#         cursor.execute("INSERT INTO Questions (question_id, category, difficulty, question_text) VALUES (?,?,?,?)", row)
-
-
-# with open('../data/answers_v2.csv', 'r') as f:
-#     csv_reader = csv.reader(f)
-#     next(csv_reader)
-
-#     for row in csv_reader:
-#         cursor.execute("INSERT INTO Answers (answer_text, is_correct, question_id) VALUES (?,?,?)", row)
 
 @dataclass
 class Question():
     difficulty: str  # Change to enum
-    category: str  # Change to enum
     question_text: str
+    category_id: int  # Change to enum
 
 @dataclass
 class Answer():
     answer_text: str
-    is_correct: bool 
+    is_correct: int 
     question_id: int
-    
 
-# test_questions = (
-#     ("easy", "geography", "What is the capital of France?"),
-#     ("easy", "history", "Who was the first president of the United States?")
-# )
+class TriviaDatabase:
+    def __init__(self,
+                 db_path: str='test.db', 
+                 init_sql_path: str='init.sql',
+                 table_init_paths: dict={
+                     'categories': '../data/categories_v1.csv',
+                     'questions': '../data/questions_v4.csv',
+                     'answers': '../data/answers_v2.csv'
+                 }
+    ):
+        self._conn = sqlite3.connect(db_path)
+        self._cursor = self._conn.cursor()
 
-# test_answers = (
-#     ("Paris", True, 1),
-#     ("Seattle", False, 1),
-#     ("London", False, 1),
-#     ("New York", False, 1),
-#     ("Alexander Hamilton", False, 2),
-#     ("Abraham Lincoln", False, 2),
-#     ("George Washington", True, 2),
-#     ("James Madison", False, 2)
-# )
+        with open(init_sql_path, 'r') as f:
+            statements = f.read()
+            for statement in statements.split(";"):
+                self._cursor.execute(statement)
 
-# question_insert_statement = "INSERT INTO Questions (difficulty, category, question_text) VALUES (?,?,?)"
-# answer_insert_statement = "INSERT INTO Answers (answer_text, is_correct, question_id) VALUES (?,?,?)"
+        for k, v in table_init_paths.items():
+            df = pd.read_csv(v)
+            df.to_sql(k.capitalize(), self._conn, if_exists='append', index=False)
 
+        # df_categories = pd.read_csv(table_init_paths['categories'])
+        # df_questions = pd.read_csv("../data/questions_v4.csv")
+        # df_answers = pd.read_csv("../data/answers_v2.csv")
 
-# for i, q in enumerate(test_questions):
-#     cursor.execute(question_insert_statement, test_questions[i])
-#     conn.commit()
-
-# for i, a in enumerate(test_answers):
-#     cursor.execute(answer_insert_statement, test_answers[i])
-#     conn.commit()
+        # df_categories.to_sql(table_init_paths['categories'].upper(), conn, if_exists='append', index=False)
+        # df_questions.to_sql(table_init_paths['questions'].upper(), conn, if_exists='append', index=False)
+        # df_answers.to_sql(table_init_paths['answers'].upper(), conn, if_exists='append', index=False)
 
 
-df_quesitons = pd.read_csv("../data/questions_v3.csv")
-df_answers = pd.read_csv("../data/answers_v2.csv")
-df_quesitons.to_sql('Questions', conn, if_exists='append', index=False)
-df_answers.to_sql('Answers', conn, if_exists='append', index=False)
 
-conn.close()
+# def update_question_text():
+#     cursor.execute(
+#         "UPDATE Questions SET question_text = ?, updated_at = CURRENT_TIMESTAMP WHERE question_id = ?",
+#         (new_text, question_id)
+#     )
+
+
 
 
 if __name__ == "__main__":
-    pass
+    db = TriviaDatabase()
