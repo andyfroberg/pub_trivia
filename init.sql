@@ -1,9 +1,9 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS Categories (
-    category_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-);
+-- CREATE TABLE IF NOT EXISTS Categories (
+--     category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     name TEXT NOT NULL UNIQUE
+-- );
 
 CREATE TABLE IF NOT EXISTS Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,10 +27,11 @@ CREATE TABLE IF NOT EXISTS Questions (
     question_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    category TEXT NOT NULL,
     difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
-    question_text TEXT NOT NULL,
-    category_id INTEGER NOT NULL,
-    FOREIGN KEY (category_id) REFERENCES Categories(category_id)  -- CASCADES? Check all FK references
+    question_text TEXT NOT NULL
+    -- category_id INTEGER NOT NULL,
+    -- FOREIGN KEY (category_id) REFERENCES Categories(category_id)  -- CASCADES? Check all FK references
 );
 
 CREATE TABLE IF NOT EXISTS Answers (
