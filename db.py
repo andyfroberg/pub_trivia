@@ -2,6 +2,7 @@ import sqlite3
 from dataclasses import dataclass
 import pandas as pd
 from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
+from datetime import datetime
 
 # @dataclass
 # class Question():
@@ -27,9 +28,6 @@ class TriviaDatabaseManager:
                  }
     ):
         self._db_path = db_path
-        self._conn = None
-        # self._conn.row_factory = sqlite3.Row
-        # self._cursor = self._conn.cursor()
 
         if init:
             with open(init_sql_path, 'r') as f:
@@ -41,25 +39,8 @@ class TriviaDatabaseManager:
                 df = pd.read_csv(v)
                 df.to_sql(k.capitalize(), self._conn, if_exists='append', index=False)
 
-
-    def __enter__(self):
-        self._conn = self._connect()
-        return self._conn
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._conn:
-            self._conn.close()
-            self._conn = None
-
-    def _connect(self, row_factory=True):
-        self._conn = sqlite3.connect(self._db_path)
-        if row_factory:
-            self._conn.row_factory = sqlite3.Row
-        self._cursor = self._conn.cursor()
-
     def get_question_by_id(self, question_id: int) -> list[Question]:
-        # with sqlite3.connect(self._db_path) as conn:
-        with self._conn:
+        with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(
@@ -151,7 +132,57 @@ class TriviaDatabaseManager:
             rows = cursor.fetchall()
             return [Question(**row) for row in rows]
 
+    def get_correct_answer_by_question_id(self, question_id):
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT answer_text 
+                FROM Answers 
+                WHERE is_correct = 1 AND question_id = ?
+                """, 
+                (question_id,)
+            )
+            return cursor.fetchone()[0]
 
+
+    def add_question(self, question: Question):
+        ...
+
+
+    def update_question(self, question_id, **kwargs):
+        if not kwargs:
+            raise ValueError("No fields provided to update")
+
+        if 'category' in kwargs and isinstance(kwargs['category'], CategoryChoices):
+            kwargs['category'] = kwargs['category'].value
+    
+        if 'difficulty' in kwargs and isinstance(kwargs['difficulty'], DifficultyChoices):
+            kwargs['difficulty'] = kwargs['difficulty'].value
+
+        kwargs['updated_at'] = datetime.now()
+        set_clause = ", ".join([f"{field} = ?" for field in kwargs.keys()])
+        values = list(kwargs.values())
+        print(values)
+
+        with sqlite3.connect(self._db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"""
+                UPDATE Questions
+                SET {set_clause}
+                WHERE question_id = ?
+                """,
+                (*values, question_id)
+            )
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"No question found with id: {question_id}")
+
+            conn.commit()
+
+            return self.get_question_by_id(question_id)
 
 # def update_question_text():
 #     cursor.execute(
@@ -163,4 +194,4 @@ class TriviaDatabaseManager:
 
 
 if __name__ == "__main__":
-    db = TriviaDatabase(init=True)
+    db = TriviaDatabaseManager(init=True)

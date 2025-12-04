@@ -25,17 +25,12 @@ async def read_root(request: Request):
 async def read_root(
     request: Request,
 ):
-    
-    print(type(request))
-    print(request)
     if request:
         message = request
     else:
         message = ""
     data = {"title": "Random Question", "message": message, "question": get_random_question()}
     context = {"request": request, "data": data}
-    print(type(data))
-    print(data)
     return templates.TemplateResponse("random.html", context)
 
 
@@ -130,19 +125,9 @@ async def question_response(
             status_code=400, 
             detail="400: Bad Request. Question resonse required."
         )
-    conn = sqlite3.connect('test.db')
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        SELECT answer_text 
-        FROM Answers 
-        WHERE is_correct = 1 AND question_id = ?
-        """, 
-        (question_response.question_id,)
-    )
-    correct_answer = cursor.fetchone()[0]
-    conn.close()
+    
+    correct_answer = db.get_correct_answer_by_question_id(question_response.question_id)
+
     message = {}
     if question_response.question_response == correct_answer:
         message = {"message": "You answered correctly!"}
@@ -153,7 +138,6 @@ async def question_response(
     return templates.TemplateResponse("result.html", context)
     # return RedirectResponse(url="/random", status_code=200)
 
-  
 
 @app.get("/questions/{question_id}")
 async def question_by_id(question_id: int):
@@ -165,7 +149,6 @@ async def questions_by_query(
     category: CategoryChoices | None = None, 
     difficulty: DifficultyChoices | None = None
 ) -> list[Question]:
-
     questions = []
     if category and difficulty:
         questions = db.get_questions_by_category_and_difficulty(category, difficulty)
@@ -179,8 +162,37 @@ async def questions_by_query(
     return questions
 
 
+@app.get("/answers/{question_id}")
+async def answer_by_question_id(question_id: int):
+    return db.get_correct_answer_by_question_id(question_id)
+
+
+
+
+# Add auth so the following routes are not publicly accessible.
+
+# @app.add("/questions/add/")  # add auth so that only you can update questions
+# async def update_question(question: Question | None = None
+# ) -> list[Question]:  # Returns updated question object
+#     return db.update_question()
+
+
+@app.put("/questions/update/")  # add auth so that only you can update questions
+async def update_question(question_id,
+                          category: CategoryChoices | None = None,
+                          difficulty: DifficultyChoices | None = None,
+                          question_text: str | None = None
+) -> list[Question]:  # Returns updated question object
+    return db.update_question(question_id, category=category, difficulty=difficulty, question_text=question_text)
+
+@app.delete("/questions/delete/")  # add auth so that only you can update questions
+async def delete_question(question_id: int):
+    return db.delete_question(69) 
+
+
 def get_random_question() -> Question:
     return db.get_random_question()
+
 
 
 
