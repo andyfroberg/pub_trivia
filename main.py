@@ -1,11 +1,10 @@
-from fastapi import FastAPI, Request, Query, HTTPException, Form
+from fastapi import FastAPI, Request, Query, HTTPException, status, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import EmailStr
 from typing import Annotated
 from conf import Config
 from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
-import sqlite3
-from random import randint
 from db import TriviaDatabaseManager
 
 app = FastAPI()
@@ -14,7 +13,7 @@ templates = Jinja2Templates(directory='templates')
 db = TriviaDatabaseManager()
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+def read_root(request: Request):
     return templates.TemplateResponse(
         "index.html", 
         {"request": request, "message": "Hello from FastAPI and Jinja2!"}
@@ -22,7 +21,7 @@ async def read_root(request: Request):
 
 
 @app.get("/random", response_class=HTMLResponse)
-async def read_root(
+def read_root(
     request: Request,
 ):
     if request:
@@ -35,10 +34,10 @@ async def read_root(
 
 
 @app.get("/questions/category")
-async def questions_by_category_query(category: CategoryChoices | None = None) -> list[Question]:
-    if not category:
+def questions_by_category_query(category: CategoryChoices | None = None) -> list[Question]:
+    if category is None:
         raise HTTPException(
-            status_code=400, 
+            status_code=status.HTTP_400_BAD_REQUEST, 
             detail="400: Bad Request. User request must contain a category."
         )
     
@@ -46,10 +45,10 @@ async def questions_by_category_query(category: CategoryChoices | None = None) -
 
 
 @app.get("/questions/category/{category}")
-async def questions_by_category_path(category: CategoryChoices | None = None) -> list[Question]:  
-    if not category:
+def questions_by_category_path(category: CategoryChoices | None = None) -> list[Question]:  
+    if category is None:
         raise HTTPException(
-            status_code=400, 
+            status_code=status.HTTP_400_BAD_REQUEST, 
             detail="400: Bad Request. User request must contain a category."
         )
     
@@ -57,10 +56,10 @@ async def questions_by_category_path(category: CategoryChoices | None = None) ->
 
 
 @app.get("/questions/difficulty")
-async def questions_by_difficulty_query(difficulty: DifficultyChoices | None = None) -> list[Question]:
-    if not difficulty:
+def questions_by_difficulty_query(difficulty: DifficultyChoices | None = None) -> list[Question]:
+    if difficulty is None:
         raise HTTPException(
-            status_code=400, 
+            status_code=status.HTTP_400_BAD_REQUEST, 
             detail="400: Bad Request. Request must contain a difficulty."
         )
     
@@ -68,65 +67,32 @@ async def questions_by_difficulty_query(difficulty: DifficultyChoices | None = N
 
 
 @app.get("/questions/difficulty/{difficulty}")
-async def questions_by_difficulty_path(difficulty: DifficultyChoices | None = None) -> list[Question]:  
-    if not difficulty:
+def questions_by_difficulty_path(difficulty: DifficultyChoices | None = None) -> list[Question]:  
+    if difficulty is None:
         raise HTTPException(
-            status_code=400, 
+            status_code=status.HTTP_400_BAD_REQUEST, 
             detail="400: Bad Request. Request must contain a difficulty."
         )
     
     return db.get_question_by_difficulty(difficulty)
-     
-
-# @app.post("/questions/responses/{question_id}/")
-# async def question_response(
-#     question_id: int, 
-#     question_response: Annotated[QuestionResponseFormData, Form()]
-# ):
-#     if not question_id:
-#         raise HTTPException(
-#             status_code=400, 
-#             detail="400: Bad Request. Question ID required."
-#         )
-#     if not question_response:
-#         raise HTTPException(
-#             status_code=400, 
-#             detail="400: Bad Request. Question resonse required."
-#         )
-#     conn = sqlite3.connect('test.db')
-#     conn.row_factory = sqlite3.Row
-#     cursor = conn.cursor()
-#     cursor.execute(
-#         """
-#         SELECT answer_text 
-#         FROM Answers 
-#         WHERE is_correct = 1 AND question_id = ?
-#         """, 
-#         (question_id,)
-#     )
-#     correct_answer = cursor.fetchone()[0]
-#     conn.close()
-#     message = {}
-#     if question_response.answer == correct_answer:
-#         message = {"message": "You answered correctly!"}
-#     else:
-#         message = {"message": "That's incorrect!"}
-#     return message
 
 
 @app.post("/questions/responses/", response_class=HTMLResponse)
-async def question_response(
+def question_response(
     request: Request,
     question_response: Annotated[QuestionResponseFormData, Form()]
     # question_id: int = Form(...), answer: str = Form(...)
 ):
-    if not question_response:
+    if question_response is None:
         raise HTTPException(
-            status_code=400, 
+            status_code=status.HTTP_400_BAD_REQUEST, 
             detail="400: Bad Request. Question resonse required."
         )
     
     correct_answer = db.get_correct_answer_by_question_id(question_response.question_id)
+
+    if question_response.question_response == correct_answer:
+        pass  # add logic to update user score, questions_answered, etc.
 
     message = {}
     if question_response.question_response == correct_answer:
@@ -136,25 +102,24 @@ async def question_response(
 
     context = {"request": request, "data": message}
     return templates.TemplateResponse("result.html", context)
-    # return RedirectResponse(url="/random", status_code=200)
 
 
 @app.get("/questions/{question_id}")
-async def question_by_id(question_id: int):
+def question_by_id(question_id: int):
     return db.get_question_by_id(question_id)
 
 
 @app.get("/questions")
-async def questions_by_query(
+def questions_by_query(
     category: CategoryChoices | None = None, 
     difficulty: DifficultyChoices | None = None
 ) -> list[Question]:
     questions = []
     if category and difficulty:
         questions = db.get_questions_by_category_and_difficulty(category, difficulty)
-    elif category and not difficulty:
+    elif category and difficulty is None:
         questions = db.get_question_by_category(category)
-    elif difficulty and not category:
+    elif difficulty and category is None:
         questions = db.get_question_by_difficulty(difficulty)
     else:  # Not category and not difficulty
         questions = db.get_all_questions()
@@ -163,31 +128,57 @@ async def questions_by_query(
 
 
 @app.get("/answers/{question_id}")
-async def answer_by_question_id(question_id: int):
+def answer_by_question_id(question_id: int):
     return db.get_correct_answer_by_question_id(question_id)
-
 
 
 
 # Add auth so the following routes are not publicly accessible.
 
-# @app.add("/questions/add/")  # add auth so that only you can update questions
-# async def update_question(question: Question | None = None
-# ) -> list[Question]:  # Returns updated question object
-#     return db.update_question()
+@app.post("/questions/add/")
+def add_question(
+    category: CategoryChoices | None = None,
+    difficulty: DifficultyChoices | None = None,
+    question_text: str | None = None
+) -> Question:  # TODO check if this needs to return list[Question] instead
+    return db.add_question(category=category, difficulty=difficulty, question_text=question_text)
 
 
 @app.put("/questions/update/")  # add auth so that only you can update questions
-async def update_question(question_id,
-                          category: CategoryChoices | None = None,
-                          difficulty: DifficultyChoices | None = None,
-                          question_text: str | None = None
+def update_question(
+    question_id,
+    category: CategoryChoices | None = None,
+    difficulty: DifficultyChoices | None = None,
+    question_text: str | None = None
 ) -> list[Question]:  # Returns updated question object
     return db.update_question(question_id, category=category, difficulty=difficulty, question_text=question_text)
 
+
 @app.delete("/questions/delete/")  # add auth so that only you can update questions
-async def delete_question(question_id: int):
+def delete_question(question_id: int):
     return db.delete_question(69) 
+
+
+@app.post("/users/create")
+def create_user(email: EmailStr | None = None, username: str | None = None):
+    # Validate email
+    if email is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="400: Bad Request. Request must contain an email."
+        )
+    
+    if username is None:
+        if len(email.split("@")[0]) >= 3:
+            username = email[0:2]
+        else:
+            username = email[0]
+            
+    user_created = db.create_user(email, username)
+    
+    return user_created
+
+
 
 
 def get_random_question() -> Question:
