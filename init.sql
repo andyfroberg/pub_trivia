@@ -1,14 +1,15 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS Categories (
-    category_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-);
+-- CREATE TABLE IF NOT EXISTS Categories (
+--     category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     name TEXT NOT NULL UNIQUE
+-- );
 
 CREATE TABLE IF NOT EXISTS Users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     email TEXT UNIQUE NOT NULL,  -- Needs frontend &/or backend validation
+    username TEXT NOT NULL,
     hashed_mfa_code TEXT,
     hashed_mfa_code_expires_at DATETIME,
     session_id TEXT,
@@ -27,10 +28,11 @@ CREATE TABLE IF NOT EXISTS Questions (
     question_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    category TEXT NOT NULL,
     difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
-    question_text TEXT NOT NULL,
-    category_id INTEGER NOT NULL,
-    FOREIGN KEY (category_id) REFERENCES Categories(category_id)  -- CASCADES? Check all FK references
+    question_text TEXT NOT NULL
+    -- category_id INTEGER NOT NULL,
+    -- FOREIGN KEY (category_id) REFERENCES Categories(category_id)  -- CASCADES? Check all FK references
 );
 
 CREATE TABLE IF NOT EXISTS Answers (
@@ -41,6 +43,8 @@ CREATE TABLE IF NOT EXISTS Answers (
     is_correct INTEGER NOT NULL CHECK (is_correct IN (0, 1)),  -- SQLite doesn't support boolean: 0=false, 1=true
     question_id INTEGER NOT NULL,
     FOREIGN KEY (question_id) REFERENCES Questions(question_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS RoundQuestions (
@@ -50,8 +54,12 @@ CREATE TABLE IF NOT EXISTS RoundQuestions (
     question_id INTEGER NOT NULL,
     round_id INTEGER NOT NULL,
     UNIQUE(question_id, round_id),
-    FOREIGN KEY (question_id) REFERENCES Questions(question_id),
+    FOREIGN KEY (question_id) REFERENCES Questions(question_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
     FOREIGN KEY (round_id) REFERENCES Rounds(round_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS UserAnswers (
@@ -62,8 +70,12 @@ CREATE TABLE IF NOT EXISTS UserAnswers (
     question_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     UNIQUE(question_id, user_id),
-    FOREIGN KEY (question_id) REFERENCES Questions(question_id),
+    FOREIGN KEY (question_id) REFERENCES Questions(question_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 -- -- Triggers to auto-update updated_at timestamps (more efficient with WHEN clause)

@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class CategoryChoices(Enum):
@@ -13,6 +13,7 @@ class CategoryChoices(Enum):
     MUSIC = "music"
     TECHNOLOGY = "technology"
     FOOD = "food"
+    SKATEBOARDING = "skateboarding"
 
 
 class DifficultyChoices(Enum):
@@ -30,3 +31,8 @@ class Question(BaseModel):
 class QuestionResponseFormData(BaseModel):
     question_id: int
     question_response: str
+
+class User(BaseModel):
+    name: str
+    email: EmailStr
+
