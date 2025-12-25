@@ -2,7 +2,7 @@ import sqlite3
 from dataclasses import dataclass
 import pandas as pd
 from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
-from models import DBQuestion
+from backend.models import DBQuestion
 from datetime import datetime
 
 

@@ -5,7 +5,7 @@ from pydantic import EmailStr
 from typing import Annotated
 from conf import Config
 from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
-from db import TriviaDatabaseManager
+from database.db import TriviaDatabaseManager
 
 app = FastAPI()
 templates = Jinja2Templates(directory='templates')
