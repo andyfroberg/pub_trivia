@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ data.title }}{% endblock %}
+{% block content %}
+    <form action="/questions/responses/" method="post">
+        <label for="category">Category: {{ data.question[0].category.capitalize() }}</label><br>
+        <label for="difficulty">Difficulty: {{ data.question[0].difficulty.capitalize() }}</label><br>
+        <label for="question_text">{{ data.question[0].question_text }}</label><br>
+        <input type="text" id="response" name="question_response" required><br><br>
+        <input type="hidden" name="question_id" value="{{ data.question[0].question_id }}">
+
+        <input type="submit" value="Submit Answer">
+    </form>
+{% endblock %}

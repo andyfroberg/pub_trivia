@@ -1,0 +1,30 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS Questions (
+    question_id INTEGER PRIMARY KEY,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    difficulty TEXT NOT NULL,
+    category TEXT NOT NULL,
+    question_text TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Answers (
+    answer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    answer_text TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    question_id INTEGER,
+    FOREIGN KEY (question_id) REFERENCES Questions(question_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    email TEXT NOT NULL,
+    session_id TEXT,
+    session_refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
