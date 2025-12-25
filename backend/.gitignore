@@ -1,0 +1,28 @@
+### ENVIRONMENT ###
+.env
+.envrc
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+
+### PYTHON ###
+.pytest_cache/
+__pypackages__/
+
+
+### JAVASCRIPT ###
+
+
+### DATABASE ###
+db_save/
+
+### IDE ###
+.vscode/
+
+
+### OS ###
+.DS_Store
