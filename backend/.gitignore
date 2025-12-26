@@ -12,6 +12,7 @@ venv.bak/
 ### PYTHON ###
 .pytest_cache/
 __pypackages__/
+__pycache__/
 
 
 ### JAVASCRIPT ###
