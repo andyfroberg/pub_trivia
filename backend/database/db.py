@@ -1,16 +1,16 @@
 import sqlite3
 from dataclasses import dataclass
 import pandas as pd
-from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
+from backend.schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
 from backend.models import DBQuestion
 from datetime import datetime
 
 
 class TriviaDatabaseManager:
     def __init__(self,
-                 db_path: str='test.db', 
+                 db_path: str='./backend/database/test.db', 
                  init: bool=False,  # populate db with data
-                 init_sql_path: str='./init.sql',  # TODO replace with os path
+                 init_sql_path: str='./backend/database/init.sql',  # TODO replace with os path
                  table_init_paths: dict={
                     #  'categories': '../data/categories_v1.csv',
                      'Questions': '../data/questions_v3.csv',

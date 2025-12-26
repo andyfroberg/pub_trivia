@@ -1,14 +1,15 @@
+import uvicorn
 from fastapi import FastAPI, Request, Query, HTTPException, status, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import EmailStr
 from typing import Annotated
-from conf import Config
-from schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
-from database.db import TriviaDatabaseManager
+from backend.conf import Config
+from backend.schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
+from backend.database.db import TriviaDatabaseManager
 
 app = FastAPI()
-templates = Jinja2Templates(directory='templates')
+templates = Jinja2Templates(directory='backend/templates') # TODO update path
 
 db = TriviaDatabaseManager()
 
@@ -21,7 +22,7 @@ def read_root(request: Request):
 
 
 @app.get("/random", response_class=HTMLResponse)
-def read_root(
+def get_random_question(
     request: Request,
 ):
     if request:
@@ -193,4 +194,10 @@ def get_random_question() -> Question:
 
 
 if __name__ == "__main__":
-    pass
+    uvicorn.run(
+        "backend.main:app",  # TODO update path
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )
