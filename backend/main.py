@@ -29,18 +29,12 @@ def read_root(request: Request):
     }
 
 
-
-@app.get("/random", response_class=HTMLResponse)
-def get_random_question(
-    request: Request,
-):
-    if request:
-        message = request
-    else:
-        message = ""
-    data = {"title": "Random Question", "message": message, "question": get_random_question()}
-    context = {"request": request, "data": data}
-    return templates.TemplateResponse("random.html", context)
+@app.get("/questions/random")
+def questions_get_random_question(
+    category: CategoryChoices | None = None, 
+    difficulty: DifficultyChoices | None = None
+) -> Question:
+    return db.get_random_question(category=category, difficulty=difficulty)
 
 
 @app.get("/questions/category")
@@ -196,14 +190,6 @@ def create_user(email: EmailStr | None = None, username: str | None = None):
     user_created = db.create_user(email, username)
     
     return user_created
-
-
-
-
-def get_random_question() -> Question:
-    return db.get_random_question()
-
-
 
 
 # @app.get("/round", response_class=HTMLResponse)

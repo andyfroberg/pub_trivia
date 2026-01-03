@@ -107,20 +107,39 @@ class TriviaDatabaseManager:
             rows = cursor.fetchall()
             return [Question(**row) for row in rows]
         
-    def get_random_question(self):
+    def get_random_question(self,
+        category: CategoryChoices | None = None,
+        difficulty: DifficultyChoices | None = None
+    ) -> Question:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
+
+            where_conditions = []
+            params = []
+
+            if category is not None:
+                where_conditions.append("category = ?")
+                params.append(category.value)
+
+            if difficulty is not None:
+                where_conditions.append("difficulty = ?")
+                params.append(difficulty.value)
+
+            where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+
             cursor.execute(
-                """
+                f"""
                 SELECT question_id, difficulty, category, question_text
                 FROM Questions
+                WHERE {where_clause}
                 ORDER BY RANDOM()
                 LIMIT 1;
-                """
+                """,
+                params
             )
             rows = cursor.fetchall()
-            return [Question(**row) for row in rows]
+            return [Question(**row) for row in rows][0]
 
     def get_correct_answer_by_question_id(self, question_id):
         with sqlite3.connect(self._db_path) as conn:
