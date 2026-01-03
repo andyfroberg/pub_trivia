@@ -13,7 +13,7 @@ class CategoryChoices(Enum):
     MUSIC = "music"
     TECHNOLOGY = "technology"
     FOOD = "food"
-    SKATEBOARDING = "skateboarding"
+    # SKATEBOARDING = "skateboarding"
 
 
 class DifficultyChoices(Enum):
