@@ -1,3 +1,5 @@
 fastapi[all]
 pandas[excel]
 email-validator
+pyjwt
+pwdlib[argon2]

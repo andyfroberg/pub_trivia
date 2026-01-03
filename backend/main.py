@@ -10,15 +10,24 @@ from backend.database.db import TriviaDatabaseManager
 
 app = FastAPI()
 templates = Jinja2Templates(directory='backend/templates') # TODO update path
+url = "https://trivial.pub"
 
 db = TriviaDatabaseManager()
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 def read_root(request: Request):
-    return templates.TemplateResponse(
-        "index.html", 
-        {"request": request, "message": "Hello from FastAPI and Jinja2!"}
-    )
+    return {
+        "api_name": "trivial.pub API",
+        "status": "active",
+        "version": "1.0",
+        "documentation_url": f"{url}/docs",
+        "endpoints": {
+            "questions": f"{url}/questions",
+            "answers": f"{url}/answers",
+            "users": f"{url}/users"
+        }
+    }
+
 
 
 @app.get("/random", response_class=HTMLResponse)
@@ -142,7 +151,11 @@ def add_question(
     difficulty: DifficultyChoices | None = None,
     question_text: str | None = None
 ) -> Question:  # TODO check if this needs to return list[Question] instead
-    return db.add_question(category=category, difficulty=difficulty, question_text=question_text)
+    return db.add_question(
+        category=category, 
+        difficulty=difficulty, 
+        question_text=question_text
+    )
 
 
 @app.put("/questions/update/")  # add auth so that only you can update questions
@@ -152,7 +165,12 @@ def update_question(
     difficulty: DifficultyChoices | None = None,
     question_text: str | None = None
 ) -> list[Question]:  # Returns updated question object
-    return db.update_question(question_id, category=category, difficulty=difficulty, question_text=question_text)
+    return db.update_question(
+        question_id, 
+        category=category, 
+        difficulty=difficulty, 
+        question_text=question_text
+    )
 
 
 @app.delete("/questions/delete/")  # add auth so that only you can update questions
