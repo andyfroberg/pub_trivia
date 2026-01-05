@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS Rounds (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER NOT NULL,
+    round_status TEXT NOT NULL,
+    current_index INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
@@ -35,7 +37,7 @@ CREATE TABLE IF NOT EXISTS Questions (
     -- FOREIGN KEY (category_id) REFERENCES Categories(category_id)  -- CASCADES? Check all FK references
 );
 
-CREATE TABLE IF NOT EXISTS Answers (
+CREATE TABLE IF NOT EXISTS TriviaAnswers (
     answer_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -51,21 +53,23 @@ CREATE TABLE IF NOT EXISTS RoundQuestions (
     round_question_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    question_id INTEGER NOT NULL,
     round_id INTEGER NOT NULL,
-    UNIQUE(question_id, round_id),
-    FOREIGN KEY (question_id) REFERENCES Questions(question_id)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
+    question_id INTEGER NOT NULL,
+    ordinal INTEGER NOT NULL,
+    UNIQUE(round_id, question_id),
     FOREIGN KEY (round_id) REFERENCES Rounds(round_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+    FOREIGN KEY (question_id) REFERENCES Questions(question_id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS UserAnswers (
-    user_answer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS RoundAnswers (
+    round_answer_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    answer_text TEXT NOT NULL,
     answered_correctly INTEGER NOT NULL CHECK (answered_correctly IN (0, 1)),  -- SQLite doesn't support boolean: 0=false, 1=true
     question_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,

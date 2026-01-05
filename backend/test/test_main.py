@@ -4,16 +4,11 @@ from backend.schemas import CategoryChoices, DifficultyChoices
 
 client = TestClient(app)
 
-def test_get_root_status_code():
-    response = client.get("/")
-    assert response.status_code == 200
-
 def test_get_root_response():
     response = client.get("/")
     url = "https://trivial.pub"
-    assert response.json() == {
+    expected_response = {
         "api_name": "trivial.pub API",
-        "status": "active",
         "version": "1.0",
         "documentation_url": f"{url}/docs",
         "endpoints": {
@@ -22,6 +17,8 @@ def test_get_root_response():
             "users": f"{url}/users"
         }
     }
+    assert response.status_code == 200
+    assert response.json() == expected_response
 
 def test_get_questions_random_args_none():
     rand_question_1 = client.get("/questions/random")

@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import EmailStr
 from typing import Annotated
 from backend.conf import Config
-from backend.schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
+from backend.schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponse, RoundInfo
 from backend.database.db import TriviaDatabaseManager
 
 app = FastAPI()
@@ -14,11 +14,11 @@ url = "https://trivial.pub"
 
 db = TriviaDatabaseManager()
 
+
 @app.get("/")
 def read_root(request: Request):
     return {
         "api_name": "trivial.pub API",
-        "status": "active",
         "version": "1.0",
         "documentation_url": f"{url}/docs",
         "endpoints": {
@@ -81,31 +81,26 @@ def questions_by_difficulty_path(difficulty: DifficultyChoices | None = None) ->
     return db.get_question_by_difficulty(difficulty)
 
 
-@app.post("/questions/responses/", response_class=HTMLResponse)
-def question_response(
-    request: Request,
-    question_response: Annotated[QuestionResponseFormData, Form()]
-    # question_id: int = Form(...), answer: str = Form(...)
+@app.post("/questions/responses/")
+def question_response(question_response: QuestionResponseFormData
 ):
     if question_response is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="400: Bad Request. Question resonse required."
+            detail="400: Bad Request. Question resonse is required."
         )
     
     correct_answer = db.get_correct_answer_by_question_id(question_response.question_id)
 
-    if question_response.question_response == correct_answer:
-        pass  # add logic to update user score, questions_answered, etc.
-
-    message = {}
-    if question_response.question_response == correct_answer:
-        message = {"message": "You answered correctly!"}
+    if question_response.text == correct_answer:
+        # update user stats (round score, lifetime stats, leaderboard, etc.)
+        # return response
+        pass
     else:
-        message = {"message": "That's incorrect!"}
+        # update user stats
+        # return response (including correct answer)
+        pass
 
-    context = {"request": request, "data": message}
-    return templates.TemplateResponse("result.html", context)
 
 
 @app.get("/questions/{question_id}")
@@ -169,7 +164,7 @@ def update_question(
 
 @app.delete("/questions/delete/")  # add auth so that only you can update questions
 def delete_question(question_id: int):
-    return db.delete_question(69) 
+    return db.delete_question(question_id)
 
 
 @app.post("/users/create")
@@ -192,7 +187,26 @@ def create_user(email: EmailStr | None = None, username: str | None = None):
     return user_created
 
 
-# @app.get("/round", response_class=HTMLResponse)
+@app.post("/rounds/create")
+def create_round(user_id: int) -> RoundInfo:
+    return db.create_round(user_id)
+
+@app.get("/rounds/{round_id}/questions/current")
+def get_round_current_unanswered_question(round_id: int) -> Question:
+    return db.get_round_current_unanswered_question(round_id)
+
+@app.post("/rounds/{round_id}/answers")
+def post_round_current_question_answer(round_id: int, res: QuestionResponse):
+    pass
+
+@app.get("/rounds/{round_id}")
+def get_round_by_id(round_id: int):
+    return db.get_round_by_id(round_id)
+
+
+
+
+# @app.get("/round")
 # async def read_root(request: Request):
 #     return templates.TemplateResponse("trivia_round.html", {"request": request, "message": "Trivia - Round 1"})
 
@@ -205,3 +219,11 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+
+    # mock flow from the frontend
+    # user clicks start trivia round
+    # POST /rounds/create (user_id) -> RoundInfo
+    # GET /rounds/{round_id}/questions/current (round_id) -> RoundQuestion
+    # POST /rounds/{round_id}/answers (round_id, QuestionResponse) -> RoundQuestion
+    # iterate through all questions in round
+    # GET /rounds/{round_id}/result (round_id) -> RoundResult

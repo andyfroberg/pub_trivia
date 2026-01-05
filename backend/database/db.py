@@ -1,7 +1,7 @@
 import sqlite3
 from dataclasses import dataclass
 import pandas as pd
-from backend.schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData
+from backend.schemas import CategoryChoices, DifficultyChoices, Question, QuestionResponseFormData, User, RoundInfo
 from backend.models import DBQuestion
 from datetime import datetime
 
@@ -141,7 +141,7 @@ class TriviaDatabaseManager:
             rows = cursor.fetchall()
             return [Question(**row) for row in rows][0]
 
-    def get_correct_answer_by_question_id(self, question_id):
+    def get_correct_answer_by_question_id(self, question_id: int) -> str:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
@@ -187,7 +187,6 @@ class TriviaDatabaseManager:
         kwargs['updated_at'] = datetime.now()
         set_clause = ", ".join([f"{field} = ?" for field in kwargs.keys()])
         values = list(kwargs.values())
-        print(values)
 
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.cursor()
@@ -223,6 +222,39 @@ class TriviaDatabaseManager:
             conn.commit()
             return question_id
         
+    def get_next_question(self, user_id: int, **kwargs) -> Question:
+        if user_id is None:
+            raise ValueError("user_id required.")
+        
+        if not kwargs:
+            # get any question that has not yet been tried by the user.
+            # if there are no questions that have not yet been tried by the
+            # user, then get a question that has already been tried.
+            pass
+
+        if 'category' in kwargs and isinstance(kwargs['category'], CategoryChoices):
+            kwargs['category'] = kwargs['category'].value
+    
+        if 'difficulty' in kwargs and isinstance(kwargs['difficulty'], DifficultyChoices):
+            kwargs['difficulty'] = kwargs['difficulty'].value
+
+        where_clause = ", ".join([f"{field} = ?" for field in kwargs.keys()])
+        values = list(kwargs.values())
+
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                f"""
+                SELECT question_id, difficulty, category, question_text 
+                FROM Questions 
+                WHERE {where_clause}
+                """, 
+                (*values, user_id,)
+            )
+            rows = cursor.fetchall()
+            return [Question(**row) for row in rows]
+        
     def create_user(self, email: str, username: str = None):
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.cursor()
@@ -237,6 +269,52 @@ class TriviaDatabaseManager:
 
             user_id = cursor.lastrowid
             return user_id
+        
+    def create_round(self, user_id: int) -> RoundInfo:
+        with sqlite3.connect(self._db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO Rounds (user_id)
+                VALUES (?)
+                """,
+                (user_id,)
+            )
+            conn.commit()
+            round_id = cursor.lastrowid
+            return self.get_round_by_id(round_id)
+        
+    def get_round_by_id(self, round_id: int) -> RoundInfo:
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT round_id, user_id 
+                FROM Rounds 
+                WHERE round_id = ?
+                """, 
+                (round_id,)
+            )
+            row = cursor.fetchone()
+            return RoundInfo(**row)
+        
+    def get_round_current_unanswered_question(self, round_id: int) -> Question:
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT question_id, difficulty, category, question_text 
+                FROM Questions
+                WHERE 
+                """,
+                (round_id,)
+            )
+            row = cursor.fetchone()
+            return Question(**row)
+
+
 
 
 if __name__ == "__main__":
